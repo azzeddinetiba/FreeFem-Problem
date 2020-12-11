@@ -1,0 +1,37 @@
+border a(t=0,2*pi){ x = cos(t); y = sin(t);label=1;};
+mesh disk = buildmesh(a(50));
+plot(disk);
+fespace Vh1(disk,P1);
+Vh1 u,v;
+func f = -1;
+problem laplace(u,v) =
+int2d(disk)( dx(u)*dx(v) + dy(u)*dy(v) ) 
+- int2d(disk)( f*v ) 
++ on(1,u=0) ; 
+func ue = (x^2+y^2-1)/4; // ue: sol. exacte choix
+laplace;
+Vh1 err = u - ue;    //erreur=sol.EF-Sol.exacte
+//
+plot(u,value=true,wait=true);
+plot(err,value=true,wait=true);
+//
+cout << "erreur L2=" << sqrt(int2d(disk)( err^2) )<< endl;
+cout << "erreur H10=" << sqrt( int2d(disk)((dx(u)-x/2)^2)
+ + int2d(disk)((dy(u)-y/2)^2))<< endl;
+//
+disk = adaptmesh(disk,u,err=0.01); // raffinement de maillage
+plot(disk,wait=1);
+//
+laplace;
+//
+plot (u,value=true,wait=true);
+err = u - ue; // erreur apres raffinement
+plot(err,value=true,wait=true);
+cout << "error L2=" << sqrt(int2d(disk)( err^2) )<< endl;
+cout << "error H10=" << sqrt(int2d(disk)((dx(u)-x/2)^2)
+ + int2d(disk)((dy(u)-y/2)^2))<< endl;
+fespace femp0(disk,P0);
+femp0 h = hTriangle;
+cout << "h = " << h[].max << endl;
+cout << "h = " << h[].max^2 << endl;
+

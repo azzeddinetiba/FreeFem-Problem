@@ -1,0 +1,37 @@
+real x0=1,x1=2;
+real y0=1,y1=2;
+int n=7,m=7;
+mesh Th=square(n,m,[x0+(x1-x0)*x,y0+(y1-y0)*y]); //La cavité carrée [1,2]x[1,2]
+fespace Vh(Th, P1);
+// on definit u et v, des fonctions P1 sur chaque element
+Vh u,v;
+// On definit la fonction second membre
+func f= (x-1)*(x-2)*(y-1)*(y-2)*(x*y+x-y)-(2*(y-1))*(y-2)*(x*y+x-y)-(2*(x-2))*(y-1)*(y-2)*(y+1)-(2*(x-1))*(y-1)*(y-2)*(y+1)-(2*(x-1))*(x-2)*(x*y+x-y)-2*(x-1)^2*(x-2)*(y-2)-2*(x-1)^2*(x-2)*(y-1);
+// on definit le probleme aux limites sous la forme variationnelle
+solve Poisson(u,v, solver=LU) =
+int2d(Th)(dx(u)*dx(v) + dy(u)*dy(v)) // forme bilineaire
++int2d(Th) (u*v)
+- int2d(Th)( f*v) // forme lineaire
++ on(1,2,3,4,u=0) ; // condition de type dirichlet
+plot(Th);
+plot(u);
+
+
+
+func uexct=(x-1)*(x-2)*(y-1)*(y-2)*(x*y+x-y); // On pose la fonction solution exacte
+Vh U=uexct,U1=uexct-2*u; //afin de pouvoir intégrer ces fonctions dans les fonctions plot,dx et dy
+plot(U);
+
+
+real L2error,H1error;
+L2error= sqrt(int2d(Th)((u-uexct)^2));
+H1error= sqrt(    int2d(Th)((u-uexct)^2) +  int2d(Th) (dx(U)*dx(U1)+dy(U)*dy(U1)) + int2d(Th) (dx(u)*dx(u) +dy(u)*dy(u)) );
+cout << " Lerreur en L2  ="<< L2error <<endl;
+cout << " Lerreur en H1  ="<< H1error <<endl;
+
+real L2relativeerror;
+L2relativeerror=L2error/( sqrt( int2d(Th) ( (dx(U)^2)+(dy(U)^2) ) ));
+cout << " Lerreur relative  ="<< L2relativeerror <<endl;
+
+Vh h=hTriangle; // pour déterminer quel pas on a utilisé
+cout << " pour un pas h ="<<h[].max<<endl;

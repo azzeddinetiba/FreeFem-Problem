@@ -1,0 +1,70 @@
+real alpha=1;
+real a=0,b=1;
+real c=0,d=1;
+real T=120;
+int n=5,m=5,Tincr=5;
+real DT=T/Tincr;
+mesh Th=square(n,m,[a+(b-a)*x,c+(d-c)*y]); //La cavité carrée [0,1]x[0,1]
+fespace Vh(Th, P1);
+func Uinitiale=0;
+int h=6;// Le programme raffine le maillage h fois
+
+Vh u,v; // on definit u et v, des fonctions P1 sur chaque element
+Vh Uinit=Uinitiale;
+Vh [int] SOL(Tincr+1);
+SOL[0]=Uinit;
+real[int,int] L2error(h,Tincr+1),H1error(h,Tincr+1),L2relativeerror(h,Tincr+1);
+L2error=0;
+H1error=0;
+L2relativeerror=0;
+
+
+for (int j=1;j<h+1;j++)
+ {
+ plot(Th,wait=1);
+ for (int i=1;i<Tincr+1;i++)
+  {
+plot(Uinit,fill=true,wait=1,value=1,cmm="l'instant t="+DT*i+"s",WhiteBackground=false);
+// TAPER UNE TOUCHE POUR PASSER LE GRAPHE
+u=0;
+
+// On definit la fonction second membre qui varie selon le temps (t=DT*i)
+func f=x*(x-1)*y*(y-1)-2*y*(y-1)*(DT*i)-2*x*(x-1)*DT*i;
+
+// on definit le probleme aux limites sous la forme variationnelle
+solve Poisson(u,v, solver=LU) =
+int2d(Th)(dx(u)*dx(v)*alpha + dy(u)*dy(v)*alpha) // forme bilineaire
++int2d(Th) ((u*v)/DT)
+-int2d(Th) ((Uinit*v)/DT)
+- int2d(Th)( f*v) // forme lineaire
++ on(1,2,3,4,u=0) ; // condition de type dirichlet
+SOL[i]=u;
+Uinit=u;
+func uexct=x*(x-1)*y*(y-1)*DT*i;
+// On pose la fonction solution exacte ui varie selon le temps (t=DT*i)
+Vh U=uexct,U1=uexct-2*u,err=u-uexct;
+Vh h=hTriangle; // pour déterminer quel pas on a utilisé
+L2error(j-1,Tincr)=h[].max;
+H1error(j-1,Tincr)=h[].max;
+L2relativeerror(j-1,Tincr)=h[].max;
+L2error(j-1,i-1)= sqrt(int2d(Th)((err)^2));
+H1error(j-1,i-1)= sqrt(int2d(Th)((err)^2) + int2d(Th) (dx(U)*dx(U1)+dy(U)*dy(U1)) + int2d(Th) (dx(u)*dx(u) +dy(u)*dy(u)) );
+L2relativeerror(j-1,i-1)=L2error(j-1,i-1)/( sqrt( int2d(Th) ( (dx(U)^2)+(dy(U)^2) ) ));
+
+
+//Exemple d'affichage des valeurs de la fct exacte et approchée au milieu de la plaque en chaque instant
+cout << " uh("<<(b-a)/2<<","<<((d-c)/2)<<")="<< u((b-a)/2,(d-c)/2) <<endl;
+cout << " uexacte("<<(b-a)/2<<","<<(d-c)/2<<")="<< uexct((b-a)/2,(d-c)/2) <<endl;
+ }
+
+Th=adaptmesh(Th,u,err=0.01/j); //L'erreur pour adaptmesh se diminue chaque itération
+}
+
+
+cout << " Lerreur en L2 -La derniere colonne represente le pas-"<< L2error <<endl;
+cout << " Lerreur en H1 -La derniere colonne represente le pas-"<< H1error <<endl;
+cout << " Lerreur relative -La derniere colonne represente le pas-"<< L2relativeerror <<endl;
+
+int Q;
+cout << "Appuyez sur une touche pour terminer le programme"<<endl;
+cin>>Q;
